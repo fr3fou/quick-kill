@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strconv"
 	"syscall"
 	"unsafe"
 
@@ -12,12 +13,15 @@ func getProcesses() []string {
 	v := []string{}
 	ps := make([]uint32, 255)
 	var read uint32
-	if !w32.EnumProcesses(ps, uint32(len(ps)), &read) {
+	if !w32.EnumProcesses(ps, 4*uint32(len(ps)), &read) {
 		panic("couldn't read")
 		return v
 	}
 	for _, p := range ps {
-		v = append(v, getProcessName(p))
+		g := getProcessName(p)
+		if g != "" {
+			v = append(v, g)
+		}
 	}
 	return v
 }
@@ -42,14 +46,19 @@ func getProcessName(pid uint32) string {
 	return getModuleInfo(&me32)
 }
 
-func loop() {
+func loop(ps []string) {
 	g.SingleWindow("hello world", g.Layout{
-		g.ListBoxV("pids", 250, 500-20, true, getProcesses(), nil, nil, nil, nil),
+		g.Line(
+			g.ListBoxV("pids", 250, 500-20, true, ps, nil, nil, nil, nil),
+			g.Label(strconv.Itoa(len(ps))),
+		),
 	})
 }
 
 func main() {
-
-	wnd := g.NewMasterWindow("Hello world", 500, 500, g.MasterWindowFlagsNotResizable, nil)
-	wnd.Main(loop)
+	ps := getProcesses()
+	wnd := g.NewMasterWindow("Quick Kill", 500, 500, g.MasterWindowFlagsNotResizable, nil)
+	wnd.Main(func() {
+		loop(ps)
+	})
 }

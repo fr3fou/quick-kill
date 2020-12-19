@@ -2,9 +2,11 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"sort"
 
 	g "github.com/AllenDang/giu"
+	"github.com/JamesHovious/w32"
 	"github.com/mitchellh/go-ps"
 )
 
@@ -16,8 +18,6 @@ func processesNames(ps []ps.Process) []string {
 	return s
 }
 
-var idx = 0
-
 type App struct {
 	Processes     []ps.Process
 	SelectedIndex int
@@ -25,24 +25,28 @@ type App struct {
 
 func (a *App) Loop() {
 	p := processesNames(a.Processes)
-	if g.IsKeyReleased(g.KeyL) {
-		fmt.Println("clicked!")
-		// pid := a.Processes[idx].Pid()
-		// handle, err := w32.OpenProcess(w32.SYNCHRONIZE|w32.PROCESS_TERMINATE, true, uint32(pid))
-		// if err != nil {
-		// 	log.Println(err)
-		// }
-		// if !w32.TerminateProcess(handle, 0) {
-		// 	log.Println("Failed terminating.")
-		// }
-	}
-
-	g.SingleWindow("hello world", g.Layout{
-		g.ListBoxV("pids", 150, 400-50, true, p, nil, func(selectedIndex int) {
-			a.SelectedIndex = selectedIndex
-		}, nil, nil),
-		g.LabelWrapped(fmt.Sprintf("%d Procesesses found", len(p))),
-		g.LabelWrapped(fmt.Sprintf("Selected PID: %d - %s", idx, p[idx])),
+	g.SingleWindow("Quick Kill!", g.Layout{
+		g.Line(
+			g.ListBoxV("pids", 150, 300-15, true, p, nil, func(selectedIndex int) {
+				a.SelectedIndex = selectedIndex
+			}, nil, nil),
+			g.Group(g.Layout{
+				g.LabelWrapped(fmt.Sprintf("%d Procesesses found", len(p))),
+				g.LabelWrapped(fmt.Sprintf("Selected PID: %d - %s", a.SelectedIndex, p[a.SelectedIndex])),
+				g.Button("kill", func() {
+					pid := a.Processes[a.SelectedIndex].Pid()
+					handle, err := w32.OpenProcess(w32.SYNCHRONIZE|w32.PROCESS_TERMINATE, true, uint32(pid))
+					if err != nil {
+						log.Println(err)
+						return
+					}
+					if !w32.TerminateProcess(handle, 0) {
+						log.Println("Failed terminating.")
+						return
+					}
+				}),
+			}),
+		),
 	})
 }
 
@@ -57,6 +61,6 @@ func main() {
 		return a.Processes[i].Executable() < a.Processes[j].Executable()
 	})
 
-	wnd := g.NewMasterWindow("Quick Kill", 300, 400, g.MasterWindowFlagsNotResizable, nil)
+	wnd := g.NewMasterWindow("Quick Kill", 300, 300, g.MasterWindowFlagsNotResizable, nil)
 	wnd.Main(a.Loop)
 }

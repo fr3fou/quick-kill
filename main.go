@@ -121,9 +121,6 @@ func (a *App) ProcessWidget(p Process) g.Widget {
 }
 
 func (a *App) Loop() {
-	if g.IsKeyPressed(g.KeyL) {
-		fmt.Println("hi")
-	}
 	g.SingleWindow("Quick Kill!", g.Layout{
 		g.SplitLayout("MainSplit", g.DirectionHorizontal, true, 500, g.Layout(a.ProcessRows()),
 			g.Layout{

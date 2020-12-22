@@ -27,7 +27,7 @@ type Process struct {
 }
 
 type App struct {
-	processes       []*Process
+	processes       []Process
 	pidMap          map[int]*Process
 	SelectedProcess Process
 	FilterWord      string
@@ -64,13 +64,13 @@ func (a *App) Processes() error {
 		}
 	}
 
-	a.processes = []*Process{}
+	a.processes = []Process{}
 	for _, proc := range pids {
 		if strings.Index(proc.Cmd, a.FilterWord) == -1 {
 			continue
 		}
 
-		a.processes = append(a.processes, proc)
+		a.processes = append(a.processes, *proc)
 	}
 
 	sort.Slice(a.processes, func(i, j int) bool {
@@ -91,14 +91,14 @@ func (a *App) ProcessRows() []g.Widget {
 	return v
 }
 
-func ProcessWidget(p *Process) g.Widget {
+func ProcessWidget(p Process) g.Widget {
 	if len(p.Children) == 0 {
 		return g.TreeNode(p.Cmd, g.TreeNodeFlagsLeaf, nil)
 	}
 
 	children := []g.Widget{}
 	for _, c := range p.Children {
-		children = append(children, ProcessWidget(c))
+		children = append(children, ProcessWidget(*c))
 	}
 	// children = append(children, g.Button(fmt.Sprintf("Kill-%d", p.Pid), func() {
 	// 	proc, err := os.FindProcess(p.Pid)

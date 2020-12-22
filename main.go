@@ -9,7 +9,18 @@ import (
 	"time"
 
 	g "github.com/AllenDang/giu"
+	"github.com/go-vgo/robotgo"
 	"github.com/mitchellh/go-ps"
+)
+
+// Events
+const (
+	KeyUp = 5
+)
+
+// F keys
+const (
+	F10 = 121
 )
 
 type Process struct {
@@ -110,27 +121,20 @@ func (a *App) ProcessWidget(p Process) g.Widget {
 }
 
 func (a *App) Loop() {
+	if g.IsKeyPressed(g.KeyL) {
+		fmt.Println("hi")
+	}
 	g.SingleWindow("Quick Kill!", g.Layout{
-		g.SplitLayout("Split", g.DirectionHorizontal, true, 300, g.Layout(a.ProcessRows()),
+		g.SplitLayout("Split", g.DirectionHorizontal, true, 500, g.Layout(a.ProcessRows()),
 			g.Group(g.Layout{
-				g.Label(fmt.Sprintf("Selected Process %s - %d", a.selectedProcess.Cmd, a.selectedProcess.Pid)),
-				g.Button(fmt.Sprintf("Kill %d", a.selectedProcess.Pid), func() {
-					proc, err := os.FindProcess(a.selectedProcess.Pid)
-					if err != nil {
-						log.Println(err)
-						return
-					}
-
-					if err := proc.Kill(); err != nil {
-						log.Println("Failed killing process")
-					}
-				}),
+				g.LabelWrapped(fmt.Sprintf("Selected Process %s with PID %d", a.selectedProcess.Cmd, a.selectedProcess.Pid)),
+				g.Label("Press F10 to kill."),
 			})),
 	})
 }
 
 func main() {
-	a := App{}
+	a := App{selectedProcess: Process{Pid: -1, Cmd: "None"}}
 
 	a.Processes()
 	go func() {
@@ -142,6 +146,30 @@ func main() {
 		}
 	}()
 
-	wnd := g.NewMasterWindow("Quick Kill", 500, 500, 0, nil)
+	// Start async event listener
+	hook := robotgo.EventStart()
+	defer robotgo.EventEnd()
+
+	go func() {
+		for v := range hook {
+			if v.Kind != KeyUp {
+				continue
+			}
+
+			if v.Rawcode == F10 && a.selectedProcess.Pid != -1 {
+				proc, err := os.FindProcess(a.selectedProcess.Pid)
+				if err != nil {
+					log.Println(err)
+					continue
+				}
+
+				if err := proc.Kill(); err != nil {
+					log.Println("Failed killing process")
+				}
+			}
+		}
+	}()
+
+	wnd := g.NewMasterWindow("Quick Kill", 800, 500, 0, nil)
 	wnd.Main(a.Loop)
 }

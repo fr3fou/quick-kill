@@ -70,7 +70,7 @@ func (a *App) Processes() error {
 
 	a.processes = []Process{}
 	for _, proc := range pids {
-		if strings.Index(proc.Cmd, a.filterWord) == -1 {
+		if strings.Index(strings.ToLower(proc.Cmd), strings.ToLower(a.filterWord)) == -1 {
 			continue
 		}
 
@@ -99,7 +99,7 @@ func (a *App) ProcessWidget(p Process) g.Widget {
 	if len(p.Children) == 0 {
 		return g.Line(
 			g.TreeNode(p.Cmd, g.TreeNodeFlagsLeaf, nil),
-			g.SmallButton(fmt.Sprintf("Select %d", p.Pid), func() {
+			g.SmallButton(fmt.Sprintf("Select PID %d", p.Pid), func() {
 				a.selectedProcess = p
 			}),
 		)
@@ -111,7 +111,7 @@ func (a *App) ProcessWidget(p Process) g.Widget {
 		children = append(children, a.ProcessWidget(*c))
 	}
 	children = append(children,
-		g.SmallButton(fmt.Sprintf("Select %d", p.Pid), func() {
+		g.SmallButton(fmt.Sprintf("Select PID %d", p.Pid), func() {
 			a.selectedProcess = p
 		}),
 	)
@@ -125,12 +125,20 @@ func (a *App) Loop() {
 		fmt.Println("hi")
 	}
 	g.SingleWindow("Quick Kill!", g.Layout{
-		g.SplitLayout("Split", g.DirectionHorizontal, true, 500, g.Layout(a.ProcessRows()),
-			g.Group(g.Layout{
-				g.LabelWrapped(fmt.Sprintf("Selected Process %s with PID %d", a.selectedProcess.Cmd, a.selectedProcess.Pid)),
-				g.Label("Press F10 to kill."),
-			})),
-	})
+		g.SplitLayout("MainSplit", g.DirectionHorizontal, true, 500, g.Layout(a.ProcessRows()),
+			g.Layout{
+				g.SplitLayout("SearchSplit", g.DirectionVertical, true, 55,
+					g.Layout{
+						g.Label("Search"),
+						g.InputText("", 200, &a.filterWord),
+					},
+					g.Layout{
+						g.LabelWrapped(fmt.Sprintf("Selected Process %s with PID %d", a.selectedProcess.Cmd, a.selectedProcess.Pid)),
+						g.Label("Press F10 to kill."),
+					},
+				),
+			},
+		)})
 }
 
 func main() {

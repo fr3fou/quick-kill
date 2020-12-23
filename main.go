@@ -125,19 +125,18 @@ func (a *App) ProcessWidget(p Process) g.Widget {
 
 func (a *App) Loop() {
 	g.SingleWindow("Quick Kill!", g.Layout{
-		g.SplitLayout("MainSplit", g.DirectionHorizontal, true, 500, g.Layout(a.ProcessRows()),
-			g.Layout{
-				g.SplitLayout("SearchSplit", g.DirectionVertical, true, 55,
-					g.Layout{
-						g.Label("Search"),
-						g.InputText("", 200, &a.filterWord),
-					},
-					g.Layout{
-						g.LabelWrapped(fmt.Sprintf("Selected Process %s with PID %d", a.selectedProcess.Cmd, a.selectedProcess.Pid)),
-						g.Label("Press F10 to kill."),
-					},
-				),
-			},
+		g.Line(
+			g.Child("LeftPart", true, 400, -1, g.WindowFlagsNone, g.Layout(a.ProcessRows())),
+			g.Child("RightPart", true, -1, -1, g.WindowFlagsNone, g.Layout{
+				g.Child("Search", true, -1, 55, g.WindowFlagsNone, g.Layout{
+					g.Label("Search"),
+					g.InputText("", -1, &a.filterWord),
+				}),
+				g.Child("Kill", true, -1, -1, g.WindowFlagsNone, g.Layout{
+					g.LabelWrapped(fmt.Sprintf("Selected Process %s with PID %d", a.selectedProcess.Cmd, a.selectedProcess.Pid)),
+					g.Label("Press F10 to kill."),
+				}),
+			}),
 		)})
 }
 
@@ -178,6 +177,6 @@ func main() {
 		}
 	}()
 
-	wnd := g.NewMasterWindow("Quick Kill", 800, 500, 0, nil)
+	wnd := g.NewMasterWindow("Quick Kill", 800, 500, g.MasterWindowFlagsNotResizable, nil)
 	wnd.Main(a.Loop)
 }

@@ -88,7 +88,12 @@ func (a *App) Processes() error {
 func (a *App) ProcessRows() []g.Widget {
 	v := []g.Widget{}
 	for _, p := range a.processes {
-		if parent, ok := a.pidMap[p.PPid]; ok && parent.Cmd != p.Cmd {
+		parent, hasParent := a.pidMap[p.PPid]
+		if hasParent {
+			if parent.Cmd != p.Cmd {
+				v = append(v, g.Line(a.ProcessWidget(p)), g.Separator())
+			}
+		} else {
 			v = append(v, g.Line(a.ProcessWidget(p)), g.Separator())
 		}
 	}

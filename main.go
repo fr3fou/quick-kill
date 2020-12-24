@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
+	"runtime"
 	"sort"
 	"strings"
 	"time"
@@ -148,19 +150,19 @@ func (a *App) ProcessWidget(p Process) g.Widget {
 
 func (a *App) Loop() {
 	g.SingleWindow("Quick Kill!", g.Layout{
-		g.Line(
-			g.Child("LeftPart", true, 400, -1, g.WindowFlagsNone, g.Layout(a.ProcessRows())),
-			g.Child("RightPart", true, -1, -1, g.WindowFlagsNone, g.Layout{
-				g.Child("Search", true, -1, 55, g.WindowFlagsNone, g.Layout{
-					g.Label("Search"),
-					g.InputText("", -1, &a.filterWord),
-				}),
-				g.Child("Kill", true, -1, -1, g.WindowFlagsNone, g.Layout{
-					g.LabelWrapped(fmt.Sprintf("Selected Process %s with PID %d", a.selectedProcess.Cmd, a.selectedProcess.Pid)),
-					g.Label("Press F10 to kill."),
-				}),
+		g.Child("Search", true, -1, 55, g.WindowFlagsNone, g.Layout{
+			g.Label("Search"),
+			g.InputText("", -1, &a.filterWord),
+		}),
+		g.Child("LeftPart", true, -1, 600-150, g.WindowFlagsNone, g.Layout(a.ProcessRows())),
+		g.Child("Kill", true, -1, -1, g.WindowFlagsNone, g.Layout{
+			g.LabelWrapped(fmt.Sprintf("Selected Process %s with PID %d", a.selectedProcess.Cmd, a.selectedProcess.Pid)),
+			g.Label("Press F10 to kill."),
+			g.Button("Made by fr3fou", func() {
+				openURL("https://twitter.com/fr3fou")
 			}),
-		)})
+		}),
+	})
 }
 
 func main() {
@@ -200,6 +202,25 @@ func main() {
 		}
 	}()
 
-	wnd := g.NewMasterWindow("Quick Kill", 800, 500, g.MasterWindowFlagsNotResizable, nil)
+	wnd := g.NewMasterWindow("Quick Kill", 500, 600, g.MasterWindowFlagsNotResizable, nil)
 	wnd.Main(a.Loop)
+}
+
+func openURL(url string) {
+	var err error
+
+	switch runtime.GOOS {
+	case "linux":
+		err = exec.Command("xdg-open", url).Start()
+	case "windows":
+		err = exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
+	case "darwin":
+		err = exec.Command("open", url).Start()
+	default:
+		err = fmt.Errorf("unsupported platform")
+	}
+
+	if err != nil {
+		log.Println(err)
+	}
 }

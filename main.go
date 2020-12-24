@@ -35,6 +35,7 @@ type App struct {
 	pidMap          map[int]*Process
 	filterWord      string
 	selectedProcess Process
+	renderedPids    []int
 }
 
 func (a *App) Processes() error {
@@ -97,16 +98,14 @@ func matchesQuery(proc *Process, query string) bool {
 
 func (a *App) ProcessRows() []g.Widget {
 	v := []g.Widget{}
-	renderedPids := []int{}
+	a.renderedPids = a.renderedPids[:0]
 	for _, p := range a.processes {
 		parent, hasParent := a.pidMap[p.PPid]
-		if contains(renderedPids, p.Pid) || (hasParent && parent.Cmd == p.Cmd) {
+		if contains(a.renderedPids, p.Pid) || (hasParent && parent.Cmd == p.Cmd) {
 			continue
 		}
 
-		row, _pids := a.ProcessWidget(p)
-		renderedPids = append(renderedPids, _pids...)
-		v = append(v, g.Line(row), g.Separator())
+		v = append(v, g.Line(a.ProcessWidget(p)), g.Separator())
 	}
 	return v
 }
@@ -120,7 +119,9 @@ func contains(i []int, n int) bool {
 	return false
 }
 
-func (a *App) ProcessWidget(p Process) (g.Widget, []int) {
+func (a *App) ProcessWidget(p Process) g.Widget {
+	a.renderedPids = append(a.renderedPids, p.Pid)
+
 	if len(p.Children) == 0 {
 		return g.Line(
 			g.TreeNodeV(p.Cmd, g.TreeNodeFlagsLeaf, func() {
@@ -128,24 +129,20 @@ func (a *App) ProcessWidget(p Process) (g.Widget, []int) {
 					a.selectedProcess = p
 				}
 			}, nil),
-		), []int{p.Pid}
-
+		)
 	}
 
 	children := []g.Widget{}
-	pids := []int{}
 	for _, c := range p.Children {
-		row, _pids := a.ProcessWidget(*c)
-		children = append(children, row)
-		pids = append(pids, _pids...)
+		children = append(children, a.ProcessWidget(*c))
+		a.renderedPids = append(a.renderedPids, c.Pid)
 	}
-	pids = append(pids, p.Pid)
 
 	return g.TreeNodeV(p.Cmd, g.TreeNodeFlagsOpenOnArrow, func() {
 		if g.IsItemClicked(g.MouseButtonLeft) {
 			a.selectedProcess = p
 		}
-	}, children), pids
+	}, children)
 
 }
 

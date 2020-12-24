@@ -97,18 +97,30 @@ func matchesQuery(proc *Process, query string) bool {
 
 func (a *App) ProcessRows() []g.Widget {
 	v := []g.Widget{}
+	renderedPids := []int{}
 	for _, p := range a.processes {
 		parent, hasParent := a.pidMap[p.PPid]
-		if hasParent && parent.Cmd == p.Cmd {
+		if contains(renderedPids, p.Pid) || (hasParent && parent.Cmd == p.Cmd) {
 			continue
 		}
 
-		v = append(v, g.Line(a.ProcessWidget(p)), g.Separator())
+		row, _pids := a.ProcessWidget(p)
+		renderedPids = append(renderedPids, _pids...)
+		v = append(v, g.Line(row), g.Separator())
 	}
 	return v
 }
 
-func (a *App) ProcessWidget(p Process) g.Widget {
+func contains(i []int, n int) bool {
+	for _, v := range i {
+		if v == n {
+			return true
+		}
+	}
+	return false
+}
+
+func (a *App) ProcessWidget(p Process) (g.Widget, []int) {
 	if len(p.Children) == 0 {
 		return g.Line(
 			g.TreeNodeV(p.Cmd, g.TreeNodeFlagsLeaf, func() {
@@ -116,20 +128,24 @@ func (a *App) ProcessWidget(p Process) g.Widget {
 					a.selectedProcess = p
 				}
 			}, nil),
-		)
+		), []int{p.Pid}
 
 	}
 
 	children := []g.Widget{}
+	pids := []int{}
 	for _, c := range p.Children {
-		children = append(children, a.ProcessWidget(*c))
+		row, _pids := a.ProcessWidget(*c)
+		children = append(children, row)
+		pids = append(pids, _pids...)
 	}
+	pids = append(pids, p.Pid)
 
 	return g.TreeNodeV(p.Cmd, g.TreeNodeFlagsOpenOnArrow, func() {
 		if g.IsItemClicked(g.MouseButtonLeft) {
 			a.selectedProcess = p
 		}
-	}, children)
+	}, children), pids
 
 }
 

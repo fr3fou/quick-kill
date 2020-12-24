@@ -6,4 +6,4 @@ Simple windows program that kills a program from a list when a key is pressed.
 
 - [x] Fix UI
 - [x] Show orphans
-- [ ] Make search work with children
+- [x] Make search work with children

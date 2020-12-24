@@ -70,7 +70,7 @@ func (a *App) Processes() error {
 
 	a.processes = []Process{}
 	for _, proc := range pids {
-		if strings.Index(strings.ToLower(proc.Cmd), strings.ToLower(a.filterWord)) == -1 {
+		if !matchesQuery(proc, a.filterWord) {
 			continue
 		}
 
@@ -83,6 +83,16 @@ func (a *App) Processes() error {
 	a.pidMap = pids
 
 	return nil
+}
+
+func matchesQuery(proc *Process, query string) bool {
+	for _, child := range proc.Children {
+		if matchesQuery(child, query) {
+			return true
+		}
+	}
+
+	return strings.Index(strings.ToLower(proc.Cmd), strings.ToLower(query)) != -1
 }
 
 func (a *App) ProcessRows() []g.Widget {

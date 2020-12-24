@@ -101,10 +101,11 @@ func (a *App) ProcessRows() []g.Widget {
 func (a *App) ProcessWidget(p Process) g.Widget {
 	if len(p.Children) == 0 {
 		return g.Line(
-			g.TreeNode(p.Cmd, g.TreeNodeFlagsLeaf, nil),
-			g.SmallButton(fmt.Sprintf("Select PID %d", p.Pid), func() {
-				a.selectedProcess = p
-			}),
+			g.TreeNodeV(p.Cmd, g.TreeNodeFlagsLeaf, func() {
+				if g.IsItemClicked(g.MouseButtonLeft) {
+					a.selectedProcess = p
+				}
+			}, nil),
 		)
 
 	}
@@ -113,13 +114,12 @@ func (a *App) ProcessWidget(p Process) g.Widget {
 	for _, c := range p.Children {
 		children = append(children, a.ProcessWidget(*c))
 	}
-	children = append(children,
-		g.SmallButton(fmt.Sprintf("Select PID %d", p.Pid), func() {
-			a.selectedProcess = p
-		}),
-	)
 
-	return g.TreeNode(p.Cmd, g.TreeNodeFlagsNone, children)
+	return g.TreeNodeV(p.Cmd, g.TreeNodeFlagsOpenOnArrow, func() {
+		if g.IsItemClicked(g.MouseButtonLeft) {
+			a.selectedProcess = p
+		}
+	}, children)
 
 }
 
